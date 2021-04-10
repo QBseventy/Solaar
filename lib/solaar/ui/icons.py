@@ -89,6 +89,7 @@ def _init_icon_paths():
     _default_theme = Gtk.IconTheme.get_default()
     for p in _look_for_application_icons():
         _default_theme.prepend_search_path(p)
+        break  # only prepend one path - that's sufficient
     if _log.isEnabledFor(_DEBUG):
         _log.debug('icon theme paths: %s', _default_theme.get_search_path())
 
@@ -99,7 +100,7 @@ def _init_icon_paths():
     if gtk.battery_icons_style == 'regular':
         if not _default_theme.has_icon('battery-good'):
             _log.warning('failed to detect icons')
-            gtk.battery_icons_style = 'none'
+            gtk.battery_icons_style = 'solaar'
 
 
 #

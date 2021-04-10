@@ -458,7 +458,7 @@ _D(
     wpid='406D',
     settings=[
         _FS.hires_smooth_invert(),
-        _FS.hires_smooth_resolution(),
+        #        _FS.hires_smooth_resolution(),
         _FS.pointer_speed(),
     ]
 )
@@ -483,7 +483,7 @@ _D(
     wpid='404A',
     settings=[
         _FS.hires_smooth_invert(),
-        _FS.hires_smooth_resolution(),
+        #        _FS.hires_smooth_resolution(),
     ],
 )
 _D(
@@ -510,7 +510,7 @@ _D(
     btid=0xb012,
     settings=[
         _FS.hires_smooth_invert(),
-        _FS.hires_smooth_resolution(),
+        #        _FS.hires_smooth_resolution(),
     ],
 )
 
@@ -522,7 +522,7 @@ _D(
     btid=0xb019,
     settings=[
         _FS.hires_smooth_invert(),
-        _FS.hires_smooth_resolution(),
+        #        _FS.hires_smooth_resolution(),
         _FS.gesture2_gestures(),
     ],
 )
@@ -543,6 +543,8 @@ _D(
     codename='G700',
     protocol=1.0,
     wpid='1023',
+    usbid=0xc06b,
+    interface=1,
     registers=(
         _R.battery_status,
         _R.three_leds,
