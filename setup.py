@@ -8,7 +8,7 @@ except ImportError:
     from distutils.core import setup
 
 # from solaar import NAME, __version__
-__version__ = '1.0.5'
+__version__ = '1.0.6'
 NAME = 'Solaar'
 
 
@@ -32,12 +32,13 @@ def _data_files():
 setup(
     name=NAME.lower(),
     version=__version__,
-    description='Linux device manager for Logitech receivers, keyboards, and mice.',
+    description='Linux device manager for Logitech receivers, keyboards, mice, and tablets.',
     long_description='''
 Solaar is a Linux device manager for many Logitech peripherals that connect through
 Unifying and other receivers or via USB or Bluetooth.
 Solaar is able to pair/unpair devices with receivers and show and modify some of the
-modifiable features of devices.'''.strip(),
+modifiable features of devices.
+For instructions on installing Solaar see https://pwr-solaar.github.io/Solaar/installation'''.strip(),
     author='Daniel Pavel',
     license='GPLv2',
     url='http://pwr-solaar.github.io/Solaar/',

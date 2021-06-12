@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import errno as _errno
 
 from logging import INFO as _INFO
-from logging import WARNING as _WARNING
 from logging import getLogger
 from typing import Optional
 
@@ -23,6 +22,8 @@ del getLogger
 
 _R = _hidpp10.REGISTERS
 _IR = _hidpp10.INFO_SUBREGISTERS
+
+KIND_MAP = {kind: _hidpp10.DEVICE_KIND[str(kind)] for kind in _hidpp20.DEVICE_KIND}
 
 #
 #
@@ -257,7 +258,7 @@ class Device(object):
                 kind = ord(pair_info[7:8]) & 0x0F
                 self._kind = _hidpp10.DEVICE_KIND[kind]
             elif self.online and self.protocol >= 2.0:
-                self._kind = _hidpp20.get_kind(self)
+                self._kind = KIND_MAP[_hidpp20.get_kind(self)]
         return self._kind or '?'
 
     @property
@@ -419,8 +420,8 @@ class Device(object):
     def remove_notification_handler(self, id: str):
         """Unregisters the notification handler under name `id`."""
 
-        if id not in self._notification_handlers and _log.isEnabledFor(_WARNING):
-            _log.warn(f'Tried to remove nonexistent notification handler {id} from device {self}.')
+        if id not in self._notification_handlers and _log.isEnabledFor(_INFO):
+            _log.info(f'Tried to remove nonexistent notification handler {id} from device {self}.')
         else:
             del self._notification_handlers[id]
 

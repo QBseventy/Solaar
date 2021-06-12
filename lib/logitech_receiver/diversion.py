@@ -21,6 +21,7 @@ import os as _os
 import os.path as _path
 import sys as _sys
 
+from logging import DEBUG as _DEBUG
 from logging import INFO as _INFO
 from logging import getLogger
 
@@ -158,6 +159,20 @@ def signed(bytes):
     return int.from_bytes(bytes, 'big', signed=True)
 
 
+def xy_direction(d):
+    x, y = _unpack('!2h', d[:4])
+    if x > 0 and x >= abs(y):
+        return 'right'
+    elif x < 0 and abs(x) >= abs(y):
+        return 'left'
+    elif y > 0:
+        return 'down'
+    elif y < 0:
+        return 'up'
+    else:
+        return None
+
+
 TESTS = {
     'crown_right': lambda f, r, d: f == _F.CROWN and r == 0 and d[1] < 128 and d[1],
     'crown_left': lambda f, r, d: f == _F.CROWN and r == 0 and d[1] >= 128 and 256 - d[1],
@@ -173,6 +188,11 @@ TESTS = {
     'lowres_wheel_down': lambda f, r, d: f == _F.LOWRES_WHEEL and r == 0 and signed(d[0:1]) < 0 and signed(d[0:1]),
     'hires_wheel_up': lambda f, r, d: f == _F.HIRES_WHEEL and r == 0 and signed(d[1:3]) > 0 and signed(d[1:3]),
     'hires_wheel_down': lambda f, r, d: f == _F.HIRES_WHEEL and r == 0 and signed(d[1:3]) < 0 and signed(d[1:3]),
+    'mouse-down': lambda f, r, d: f == _F.MOUSE_GESTURE and xy_direction(d) == 'down',
+    'mouse-up': lambda f, r, d: f == _F.MOUSE_GESTURE and xy_direction(d) == 'up',
+    'mouse-left': lambda f, r, d: f == _F.MOUSE_GESTURE and xy_direction(d) == 'left',
+    'mouse-right': lambda f, r, d: f == _F.MOUSE_GESTURE and xy_direction(d) == 'right',
+    'mouse-noop': lambda f, r, d: f == _F.MOUSE_GESTURE and xy_direction(d) is None,
     'False': lambda f, r, d: False,
     'True': lambda f, r, d: True,
 }
@@ -463,8 +483,8 @@ class KeyPress(Action):
 
     def evaluate(self, feature, notification, device, status, last_result):
         current = current_key_modifiers
-        if _log.isEnabledFor(_INFO):
-            _log.info('KeyPress action: %s, modifiers %s %s', self.key_symbols, current, [hex(k) for k in self.keys])
+        if _log.isEnabledFor(_DEBUG):
+            _log.debug('KeyPress action: %s, modifiers %s %s', self.key_symbols, current, [hex(k) for k in self.keys])
         self.keyDown(self.keys, current)
         self.keyUp(reversed(self.keys), current)
         displayt.sync()
@@ -521,8 +541,8 @@ class MouseScroll(Action):
         amounts = self.amounts
         if isinstance(last_result, numbers.Number):
             amounts = [math.floor(last_result * a) for a in self.amounts]
-        if _log.isEnabledFor(_INFO):
-            _log.info('MouseScroll action: %s %s %s', self.amounts, last_result, amounts)
+        if _log.isEnabledFor(_DEBUG):
+            _log.debug('MouseScroll action: %s %s %s', self.amounts, last_result, amounts)
         dx, dy = amounts
         if dx:
             click(button=buttons['scroll_right'] if dx > 0 else buttons['scroll_left'], count=abs(dx))
@@ -556,8 +576,8 @@ class MouseClick(Action):
         return 'MouseClick: %s (%d)' % (self.button, self.count)
 
     def evaluate(self, feature, notification, device, status, last_result):
-        if _log.isEnabledFor(_INFO):
-            _log.info('MouseClick action: %d %s' % (self.count, self.button))
+        if _log.isEnabledFor(_DEBUG):
+            _log.debug('MouseClick action: %d %s' % (self.count, self.button))
         if self.button and self.count:
             click(buttons[self.button], self.count)
         displayt.sync()
@@ -582,8 +602,8 @@ class Execute(Action):
 
     def evaluate(self, feature, notification, device, status, last_result):
         import subprocess
-        if _log.isEnabledFor(_INFO):
-            _log.info('Execute action: %s', self.args)
+        if _log.isEnabledFor(_DEBUG):
+            _log.debug('Execute action: %s', self.args)
         subprocess.Popen(self.args)
         return None
 
@@ -726,8 +746,8 @@ def _load_config_rule_file():
                 loaded_rules = []
                 for loaded_rule in _yaml_safe_load_all(config_file):
                     rule = Rule(loaded_rule, source=_file_path)
-                    if _log.isEnabledFor(_INFO):
-                        _log.info('load rule: %s', rule)
+                    if _log.isEnabledFor(_DEBUG):
+                        _log.debug('load rule: %s', rule)
                     loaded_rules.append(rule)
                 if _log.isEnabledFor(_INFO):
                     _log.info('loaded %d rules from %s', len(loaded_rules), config_file.name)

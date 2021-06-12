@@ -23,6 +23,7 @@ from threading import Timer as _Timer
 
 from gi.repository import Gdk, GLib, Gtk
 from logitech_receiver.settings import KIND as _SETTING_KIND
+from logitech_receiver.settings import SENSITIVITY_IGNORE as _SENSITIVITY_IGNORE
 from solaar.i18n import _, ngettext
 from solaar.ui import ui_async as _ui_async
 
@@ -352,22 +353,42 @@ def _create_multiple_range_control(setting, change):
 #
 #
 
+_allowables_icons = {True: 'changes-allow', False: 'changes-prevent', _SENSITIVITY_IGNORE: 'dialog-error'}
+_allowables_tooltips = {
+    True: _('Changes allowed'),
+    False: _('No changes allowed'),
+    _SENSITIVITY_IGNORE: _('Ignore this setting')
+}
+_next_allowable = {True: False, False: _SENSITIVITY_IGNORE, _SENSITIVITY_IGNORE: True}
+_icons_allowables = {v: k for k, v in _allowables_icons.items()}
 
-# clicking on the lock icon changes the sensitivity of the setting
+
+# clicking on the lock icon changes from changeable to unchangeable to ignore
 def _change_click(eb, button, arg):
     control, device, name = arg
-    sensitive = not control.get_sensitive()
-    control.set_sensitive(sensitive)
     icon = eb.get_children()[0]
-    _change_icon(sensitive, icon)
+    icon_name, _ = icon.get_icon_name()
+    allowed = _icons_allowables.get(icon_name, True)
+    new_allowed = _next_allowable[allowed]
+    control.set_sensitive(new_allowed is True)
+    _change_icon(new_allowed, icon)
     if device.persister:  # remember the new setting sensitivity
-        device.persister.set_sensitivity(name, sensitive)
+        device.persister.set_sensitivity(name, new_allowed)
+    if allowed == _SENSITIVITY_IGNORE:  # update setting if it was being ignored
+        setting = next((s for s in device.settings if s.name == name), None)
+        if setting:
+            persisted = device.persister.get(setting.name) if device.persister else None
+            if persisted is not None:
+                _write_async(setting, persisted, control.get_parent())
+            else:
+                _read_async(setting, True, control.get_parent(), bool(device.online), control.get_sensitive())
     return True
 
 
 def _change_icon(allowed, icon):
-    icon.set_from_icon_name('changes-allow' if allowed else 'changes-prevent', Gtk.IconSize.LARGE_TOOLBAR)
-    icon.set_tooltip_text(_('Click to prevent changes.') if allowed else _('Click to allow changes.'))
+    allowed = allowed if allowed in _allowables_icons else True
+    icon.set_from_icon_name(_allowables_icons[allowed], Gtk.IconSize.LARGE_TOOLBAR)
+    icon.set_tooltip_text(_allowables_tooltips[allowed])
 
 
 def _create_sbox(s, device):
@@ -464,7 +485,7 @@ def _update_setting_item(sbox, value, is_online=True, sensitive=True):
         control.set_value(int(value))
     elif isinstance(control, Gtk.HBox):
         kbox, vbox = control.get_children()  # depends on box layout
-        if value.get(kbox.get_active_id()):
+        if value.get(kbox.get_active_id()) is not None:
             vbox.set_active_id(str(value.get(kbox.get_active_id())))
     elif isinstance(control, Gtk.ListBox):
         if control.kind == _SETTING_KIND.multiple_toggle:
@@ -506,7 +527,7 @@ def _update_setting_item(sbox, value, is_online=True, sensitive=True):
     else:
         raise Exception('NotImplemented')
 
-    control.set_sensitive(sensitive)
+    control.set_sensitive(sensitive is True)
     _change_icon(sensitive, sbox._change_icon)
 
 
